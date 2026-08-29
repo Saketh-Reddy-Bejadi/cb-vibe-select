@@ -1,0 +1,42 @@
+// Phase 1 schema: only what auth + admin folder resolution need.
+// Full Image/Job/Face/Tag entities land in Phase 2. ponytail: grow the schema when the ingestion engine needs it.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  USER
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String?
+  email     String   @unique
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  folders   Folder[]
+}
+
+model Folder {
+  id               String    @id @default(cuid())
+  graphDriveId     String
+  graphItemId      String
+  webUrl           String
+  name             String
+  isPublicOverride Boolean   @default(false)
+  lastSyncedAt     DateTime?
+  createdBy        User      @relation(fields: [createdById], references: [id])
+  createdById      String
+  createdAt        DateTime  @default(now())
+
+  @@unique([graphDriveId, graphItemId])
+}

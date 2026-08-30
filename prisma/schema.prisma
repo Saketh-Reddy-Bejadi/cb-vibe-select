@@ -1,5 +1,6 @@
-// Phase 1 schema: only what auth + admin folder resolution need.
-// Full Image/Job/Face/Tag entities land in Phase 2. ponytail: grow the schema when the ingestion engine needs it.
+// Phase 2 adds the ingestion entities the worker needs: Image, Job, Person, FaceDetection.
+// No embedding/pgvector and no ImageTag yet — the face backend is the only AI source today; add those
+// when object-detection / embedding backends exist. ponytail: don't scaffold columns nothing populates.
 
 generator client {
   provider = "prisma-client-js"
@@ -14,6 +15,21 @@ enum Role {
   OWNER
   ADMIN
   USER
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// Per-image queue state. The worker claims PENDING rows (FOR UPDATE SKIP LOCKED) in Phase 2 Slice 4.
+enum ImageStatus {
+  PENDING
+  PROCESSING
+  DONE
+  FAILED
 }
 
 model User {
@@ -37,6 +53,72 @@ model Folder {
   createdBy        User      @relation(fields: [createdById], references: [id])
   createdById      String
   createdAt        DateTime  @default(now())
+  images           Image[]
+  jobs             Job[]
 
   @@unique([graphDriveId, graphItemId])
+}
+
+// One ingestion run for a folder (re-scans create new jobs). Worker updates the counters live for SSE.
+model Job {
+  id             String    @id @default(cuid())
+  folder         Folder    @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  folderId       String
+  status         JobStatus @default(PENDING)
+  totalItems     Int       @default(0)
+  processedItems Int       @default(0)
+  failedItems    Int       @default(0)
+  errorLog       String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Image {
+  id           String          @id @default(cuid())
+  graphItemId  String          @unique // dedup across re-scans
+  folder       Folder          @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  folderId     String
+  fileName     String
+  mimeType     String
+  sizeBytes    Int?
+  width        Int? // original px (Graph image facet) — needed to scale face boxes onto thumbnails
+  height       Int?
+  capturedAt   DateTime? // from EXIF
+  latitude     Float?
+  longitude    Float?
+  locationName String?
+  webUrl       String
+  status       ImageStatus     @default(PENDING) // queue state
+  error        String?
+  processedAt  DateTime?
+  createdAt    DateTime        @default(now())
+  faces        FaceDetection[]
+
+  @@index([status])
+}
+
+// Enrolled people are keyed by the face backend's external_id. name defaults to external_id until edited (Phase 4).
+model Person {
+  id         String          @id @default(cuid())
+  externalId String          @unique
+  name       String
+  email      String?
+  avatarUrl  String?
+  isSeeded   Boolean         @default(true)
+  faces      FaceDetection[]
+}
+
+// One detected face box. personId null = unknown (empty matches from the backend). confidence = matches[0].similarity.
+model FaceDetection {
+  id         String   @id @default(cuid())
+  image      Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  imageId    String
+  person     Person?  @relation(fields: [personId], references: [id])
+  personId   String?
+  boxX       Int
+  boxY       Int
+  boxWidth   Int
+  boxHeight  Int
+  confidence Float?
+  createdAt  DateTime @default(now())
 }

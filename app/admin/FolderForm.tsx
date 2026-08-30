@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { addFolder, type FolderFormState } from "./actions";
+import { Spinner } from "@/components/spinner";
 
 const initial: FolderFormState = {};
 
@@ -27,8 +28,9 @@ export default function FolderForm() {
 
       <button
         disabled={pending}
-        className="flex h-12 items-center justify-center rounded-2xl bg-cb-blue px-6 text-base font-bold text-white transition-colors duration-150 ease-out hover:bg-cb-blue-hover disabled:bg-cb-blue-subtle disabled:text-white/70"
+        className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-cb-blue px-6 text-base font-bold text-white transition-colors duration-150 ease-out hover:bg-cb-blue-hover disabled:bg-cb-blue-subtle disabled:text-white/70"
       >
+        {pending && <Spinner />}
         {pending ? "Resolving…" : "Resolve & Add Folder"}
       </button>
 

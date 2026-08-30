@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 import "./globals.css";
 
+// Manrope is the only brand typeface; expose it as both --font-manrope and --font-sans
+// so shadcn's `font-sans` utility resolves to Manrope too.
 const manrope = Manrope({
   variable: "--font-manrope",
   subsets: ["latin"],

@@ -34,15 +34,121 @@ async function getAppToken(): Promise<string> {
   return cached.token;
 }
 
-export async function graphGet<T>(path: string): Promise<T> {
+async function graphFetch<T>(url: string): Promise<T> {
   const token = await getAppToken();
-  const res = await fetch(`https://graph.microsoft.com/v1.0${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
   if (!res.ok) {
-    throw new Error(`Graph GET ${path} failed (${res.status}): ${await res.text()}`);
+    throw new Error(`Graph GET ${url} failed (${res.status}): ${await res.text()}`);
   }
   return res.json() as Promise<T>;
+}
+
+export function graphGet<T>(path: string): Promise<T> {
+  return graphFetch<T>(`https://graph.microsoft.com/v1.0${path}`);
+}
+
+// Fetch raw image bytes into memory ONLY — never written to disk/blob. The caller streams these
+// straight through the face pipeline + EXIF and discards them; we persist only metadata + graphItemId.
+// /content 302s to a pre-authed storage URL; fetch follows it (undici drops Authorization on the
+// cross-origin redirect, which is correct — the redirect URL is already pre-authed).
+export async function fetchImageBytes(driveId: string, itemId: string): Promise<Buffer> {
+  const token = await getAppToken();
+  const res = await fetch(
+    `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}/content`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+  if (!res.ok) {
+    throw new Error(`Graph fetch bytes ${itemId} failed (${res.status}): ${await res.text()}`);
+  }
+  return Buffer.from(await res.arrayBuffer());
+}
+
+// Fetch a Graph-generated thumbnail (CDN-cached, small). size: "small" | "medium" | "large".
+// Bytes are proxied to the browser, never stored. Returns null if no thumbnail exists.
+export async function fetchThumbnail(
+  driveId: string,
+  itemId: string,
+  size: "small" | "medium" | "large" = "large",
+): Promise<{ body: ArrayBuffer; contentType: string } | null> {
+  const token = await getAppToken();
+  const res = await fetch(
+    `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}/thumbnails/0/${size}/content`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Graph thumbnail ${itemId} failed (${res.status})`);
+  return {
+    body: await res.arrayBuffer(),
+    contentType: res.headers.get("content-type") ?? "image/jpeg",
+  };
+}
+
+const SUPPORTED_IMAGE_MIME = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/tiff",
+]);
+
+type DriveItem = {
+  id: string;
+  name: string;
+  size?: number;
+  webUrl: string;
+  file?: { mimeType: string };
+  folder?: { childCount: number };
+  image?: { width?: number; height?: number };
+};
+
+type ChildrenPage = { value: DriveItem[]; "@odata.nextLink"?: string };
+
+export type DiscoveredImage = {
+  graphItemId: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number | null;
+  webUrl: string;
+  width: number | null;
+  height: number | null;
+};
+
+const SELECT = "$select=id,name,size,webUrl,file,folder,image&$top=200";
+
+// Recursively list supported image files under a folder. BFS across subfolders when recursive.
+export async function listImages(
+  driveId: string,
+  itemId: string,
+  recursive: boolean,
+): Promise<DiscoveredImage[]> {
+  const images: DiscoveredImage[] = [];
+  const toVisit = [itemId];
+
+  while (toVisit.length) {
+    const current = toVisit.shift()!;
+    let url = `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${current}/children?${SELECT}`;
+    while (url) {
+      const page = await graphFetch<ChildrenPage>(url);
+      for (const item of page.value) {
+        if (item.folder) {
+          if (recursive) toVisit.push(item.id);
+        } else if (item.file && SUPPORTED_IMAGE_MIME.has(item.file.mimeType)) {
+          images.push({
+            graphItemId: item.id,
+            fileName: item.name,
+            mimeType: item.file.mimeType,
+            sizeBytes: item.size ?? null,
+            webUrl: item.webUrl,
+            width: item.image?.width ?? null,
+            height: item.image?.height ?? null,
+          });
+        }
+      }
+      url = page["@odata.nextLink"] ?? "";
+    }
+  }
+
+  return images;
 }
 
 export type ResolvedFolder = {

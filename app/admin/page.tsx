@@ -38,16 +38,24 @@ export default async function AdminPage() {
             {session?.user?.email} · {session?.user?.role}
           </p>
         </div>
-        <form
-          action={async () => {
-            "use server";
-            await signOut({ redirectTo: "/login" });
-          }}
-        >
-          <button className="flex h-12 items-center rounded-2xl border border-cb-blue px-5 text-base font-bold text-cb-blue transition-colors duration-150 ease-out hover:bg-cb-blue-subtle">
-            Sign out
-          </button>
-        </form>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/admin/users"
+            className="flex h-12 items-center rounded-2xl border border-cb-border px-5 text-base font-bold text-cb-text transition-colors duration-150 ease-out hover:border-cb-border-hover"
+          >
+            Users
+          </Link>
+          <form
+            action={async () => {
+              "use server";
+              await signOut({ redirectTo: "/login" });
+            }}
+          >
+            <button className="flex h-12 items-center rounded-2xl border border-cb-blue px-5 text-base font-bold text-cb-blue transition-colors duration-150 ease-out hover:bg-cb-blue-subtle">
+              Sign out
+            </button>
+          </form>
+        </div>
       </header>
 
       {isOwner && (
@@ -118,7 +126,7 @@ export default async function AdminPage() {
             {folders.map((f) => (
               <li
                 key={f.id}
-                className="rounded-lg border border-cb-border p-4 transition-[border] duration-150 ease-out hover:border-2 hover:border-cb-border-hover"
+                className="rounded-lg border border-cb-border p-4 transition-colors duration-150 ease-out hover:border-cb-border-hover"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
@@ -159,7 +167,7 @@ export default async function AdminPage() {
                         {f.isPublicOverride ? "Public ✓" : "Make public"}
                       </button>
                     </form>
-                    <ScanButton folderId={f.id} />
+                    <ScanButton folderId={f.id} synced={!!f.lastSyncedAt} />
                   </div>
                 </div>
               </li>

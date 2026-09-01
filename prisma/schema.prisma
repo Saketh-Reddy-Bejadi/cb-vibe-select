@@ -109,6 +109,12 @@ model Person {
 }
 
 // One detected face box. personId null = unknown (empty matches from the backend). confidence = matches[0].similarity.
+// Global key/value config (e.g. permissionMode = OPEN | STRICT).
+model SystemSetting {
+  key   String @id
+  value String
+}
+
 model FaceDetection {
   id         String   @id @default(cuid())
   image      Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)

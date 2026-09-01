@@ -9,7 +9,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (!session?.user?.id) return new Response("Unauthorized", { status: 401 });
 
   const { id } = await params;
-  const where = await visibleImageWhere(session.user.id);
+  const where = await visibleImageWhere({ id: session.user.id, role: session.user.role });
   const image = await prisma.image.findFirst({ where: { ...where, id }, include: { folder: true } });
   if (!image) return new Response("Not found", { status: 404 });
 

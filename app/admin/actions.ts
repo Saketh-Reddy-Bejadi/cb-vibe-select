@@ -3,7 +3,30 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { resolveFolder, listImages } from "@/lib/graph";
+import { setPermissionMode } from "@/lib/settings";
 import { revalidatePath } from "next/cache";
+
+// Owner-only: flip the global Strict/Open permission mode.
+export async function updatePermissionMode(formData: FormData) {
+  const user = await requireAdmin();
+  if (user?.role !== "OWNER") return;
+  await setPermissionMode(formData.get("mode") === "STRICT" ? "STRICT" : "OPEN");
+  revalidatePath("/admin");
+}
+
+// Toggle a folder's company-wide public override (visible in Strict mode).
+export async function toggleFolderPublic(formData: FormData) {
+  const user = await requireAdmin();
+  if (!user) return;
+  const id = String(formData.get("folderId") ?? "");
+  const folder = await prisma.folder.findUnique({ where: { id } });
+  if (!folder) return;
+  await prisma.folder.update({
+    where: { id },
+    data: { isPublicOverride: !folder.isPublicOverride },
+  });
+  revalidatePath("/admin");
+}
 
 async function requireAdmin() {
   const session = await auth();

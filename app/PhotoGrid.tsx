@@ -1,6 +1,7 @@
 import type { Prisma, Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { visibleImageWhere } from "@/lib/permissions";
+import { localEnd, localStart } from "@/lib/dates";
 import Gallery, { type GalleryImage } from "./Gallery";
 
 export type Filters = {
@@ -31,10 +32,14 @@ export default async function PhotoGrid({
   const and: Prisma.ImageWhereInput[] = [base];
   if (folderId) and.push({ folderId });
   if (from || to) {
+    // Both bounds go through lib/dates so they land in the same timezone. They
+    // previously did not: a bare "2026-03-12" is parsed as UTC per spec while
+    // "2026-03-12T23:59:59.999" is parsed as local, so east of UTC the earliest
+    // hours of the start day were silently dropped from the results.
     and.push({
       capturedAt: {
-        ...(from ? { gte: new Date(from) } : {}),
-        ...(to ? { lte: new Date(`${to}T23:59:59.999`) } : {}),
+        ...(from ? { gte: localStart(from) } : {}),
+        ...(to ? { lte: localEnd(to) } : {}),
       },
     });
   }

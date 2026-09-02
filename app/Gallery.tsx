@@ -288,7 +288,7 @@ function Thumb({
           decoding="async"
           onLoad={() => setLoaded(true)}
           onError={() => setErrored(true)}
-          className={`h-full w-full object-cover transition-opacity duration-500 ease-out ${
+          className={`h-full w-full object-cover transition-opacity duration-200 ease-out ${
             loaded ? "opacity-100" : "opacity-0"
           }`}
         />
@@ -409,7 +409,7 @@ function Inspector({
             alt={image.fileName}
             onLoad={() => setLoadedId(image.id)}
             onError={() => setErroredId(image.id)}
-            className={`block h-auto max-h-[72dvh] w-auto max-w-[min(88vw,1000px)] transition-opacity duration-300 ease-out ${
+            className={`block h-auto max-h-[72dvh] w-auto max-w-[min(88vw,1000px)] transition-opacity duration-200 ease-out ${
               loaded ? "opacity-100" : "opacity-0"
             }`}
           />

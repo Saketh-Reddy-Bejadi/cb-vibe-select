@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Prisma } from "@prisma/client";
-import { auth, signOut } from "@/auth";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { visibleImageWhere } from "@/lib/permissions";
+import SiteHeader from "@/components/site-header";
 import Gallery, { type GalleryImage } from "./Gallery";
 import FilterBar from "./FilterBar";
 
@@ -17,7 +17,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<SP>
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   const role = session.user.role;
-  const isAdmin = role === "OWNER" || role === "ADMIN";
 
   const sp = await searchParams;
   const peopleIds = (first(sp.people) ?? "").split(",").filter(Boolean);
@@ -78,46 +77,34 @@ export default async function Home({ searchParams }: { searchParams: Promise<SP>
     })),
   }));
 
+  const hasFilters = peopleIds.length > 0 || !!folderId || !!from || !!to;
+
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">
-      <header className="mb-6 flex items-center justify-between">
-        <div>
-          <span className="text-sm font-bold text-cb-blue">PicScope</span>
-          <h1 className="mt-1 text-3xl font-semibold text-cb-text">Discover</h1>
+    <>
+      <SiteHeader />
+      <main id="main" className="page max-w-6xl flex-1">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="t-h1 text-cb-text">Discover</h1>
+          <p className="t-body mt-1 text-cb-text-muted">
+            Search your Microsoft 365 photo libraries by person, folder and date.
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          {isAdmin && (
-            <Link
-              href="/admin"
-              className="flex h-11 items-center rounded-2xl border border-cb-border px-4 text-sm font-bold text-cb-text transition-colors duration-150 ease-out hover:border-cb-border-hover"
-            >
-              Admin
-            </Link>
-          )}
-          <form
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/login" });
-            }}
-          >
-            <button className="flex h-11 items-center rounded-2xl border border-cb-blue px-4 text-sm font-bold text-cb-blue transition-colors duration-150 ease-out hover:bg-cb-blue-subtle">
-              Sign out
-            </button>
-          </form>
-        </div>
-      </header>
 
-      <FilterBar
-        persons={persons}
-        folders={folders}
-        selected={{ people: peopleIds, folder: folderId ?? "", from: from ?? "", to: to ?? "" }}
-      />
+        <FilterBar
+          persons={persons}
+          folders={folders}
+          selected={{ people: peopleIds, folder: folderId ?? "", from: from ?? "", to: to ?? "" }}
+        />
 
-      <p className="mb-4 mt-4 text-sm text-cb-text-muted">
-        {images.length} photo{images.length === 1 ? "" : "s"}
-      </p>
+        {/* Result count is announced so filtering is perceivable without sight. */}
+        <p aria-live="polite" className="t-small mb-4 mt-5 text-cb-text-muted">
+          {images.length === 200 ? "First 200" : images.length} photo
+          {images.length === 1 ? "" : "s"}
+          {hasFilters && " matching your filters"}
+        </p>
 
-      <Gallery images={images} />
-    </main>
+        <Gallery images={images} />
+      </main>
+    </>
   );
 }

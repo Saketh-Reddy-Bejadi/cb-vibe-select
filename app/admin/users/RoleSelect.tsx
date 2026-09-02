@@ -20,9 +20,10 @@ export default function RoleSelect({
       <input type="hidden" name="userId" value={userId} />
       <select
         name="role"
+        aria-label="Role"
         defaultValue={current}
         onChange={(e) => e.currentTarget.form?.requestSubmit()}
-        className="h-9 rounded-2xl border border-cb-border bg-white px-3 text-sm font-medium text-cb-text outline-none transition-colors duration-150 ease-out hover:border-cb-border-hover focus:border-cb-blue"
+        className="field w-full cursor-pointer pr-3 sm:w-auto"
       >
         {options.map((r) => (
           <option key={r} value={r}>

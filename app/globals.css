@@ -4,19 +4,38 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Codebasics brand tokens (UI.md). Light-first, white-dominant, no shadows. */
+/* ---------------------------------------------------------------------------
+   Design system: Codebasics brand tokens (UI.md) structured to HIG principles
+   (Design_Principles.md) — concentric radii, 4pt spacing, AA contrast,
+   44pt touch targets, single 150ms ease-out motion curve, no shadows.
+   --------------------------------------------------------------------------- */
+
 @theme inline {
+  /* Brand blues */
   --color-cb-blue: #3b82f6;
   --color-cb-blue-hover: #2f68c5;
   --color-cb-blue-subtle: #ebf2fe;
+  --color-cb-blue-100: #d8e6fd;
+  --color-cb-blue-200: #b1cdfb;
+  --color-cb-blue-700: #234e94;
   --color-cb-navy: #181830;
+
+  /* Surfaces & borders */
   --color-cb-surface: #f5f9ff;
+  --color-cb-grey-100: #f7f9fa;
   --color-cb-border: #e4e8eb;
   --color-cb-border-hover: #d1d7dc;
+
+  /* Text. `muted` is Grey 500 (7.0:1 on white) — Grey 400 fails the 4.5:1
+     body-text minimum, so it is `subtle` and reserved for non-text decoration. */
   --color-cb-text: #1c1d1f;
-  --color-cb-text-muted: #9da3a7;
+  --color-cb-text-muted: #54585b;
+  --color-cb-text-subtle: #9da3a7;
+  --color-cb-danger: #b42318;
+
   --font-sans: var(--font-manrope);
   --font-heading: var(--font-manrope);
+
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,20 +67,16 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
-}
 
-body {
-  background: #ffffff;
-  color: var(--color-cb-text);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
-  letter-spacing: -0.02em;
+  /* Radius scale — concentric: media(10) < control(12) < card(16) < sheet(20).
+     A child's radius = parent's radius − its inset, so corners stay parallel. */
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+  --radius-3xl: 24px;
+  --radius-4xl: 28px;
 }
 
 :root {
@@ -71,25 +86,23 @@ body {
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  /* Brand: shadcn primary = Codebasics blue */
   --primary: #3b82f6;
   --primary-foreground: #ffffff;
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
+  --muted-foreground: #54585b;
+  --accent: #ebf2fe;
+  --accent-foreground: #234e94;
+  --destructive: #b42318;
+  --border: #e4e8eb;
+  --input: #e4e8eb;
   --ring: #3b82f6;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -98,50 +111,515 @@ body {
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-}
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* shadcn primitives inherit the control radius */
+  --radius: 12px;
+
+  /* Semantic radii */
+  --r-media: 10px;
+  --r-control: 12px;
+  --r-card: 16px;
+  --r-sheet: 20px;
+  --r-pill: 999px;
+
+  /* Motion — one duration, one curve, brand-mandated */
+  --dur: 150ms;
+  --ease: ease-out;
+
+  /* Minimum comfortable hit target (HIG: 44pt) */
+  --tap: 44px;
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
+
   html {
     @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: #ffffff;
+    color: var(--color-cb-text);
+    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.02em;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Native controls pick up brand colour */
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="date"],
+  select {
+    accent-color: var(--color-cb-blue);
+  }
+
+  /* Anything clickable shows the pointer — on the control itself, not just its
+     label. Disabled controls say so instead. */
+  button,
+  select,
+  summary,
+  [role="button"],
+  [role="option"],
+  [role="checkbox"],
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="submit"],
+  input[type="button"],
+  input[type="file"],
+  label:has(input[type="checkbox"]),
+  label:has(input[type="radio"]) {
+    cursor: pointer;
+  }
+  button:disabled,
+  select:disabled,
+  input:disabled,
+  [aria-disabled="true"],
+  label:has(input:disabled) {
+    cursor: not-allowed;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+  }
+
+  ::selection {
+    background: var(--color-cb-blue-subtle);
+    color: var(--color-cb-blue-700);
+  }
+
+  /* HIG accessibility: honour the OS "reduce motion" setting. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* ---------------- Type scale (UI.md), fluid per HIG scalable text ---------- */
+  .t-display {
+    font-size: clamp(1.875rem, 1.2rem + 3vw, 2.5rem);
+    line-height: 1.2;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .t-h1 {
+    font-size: clamp(1.625rem, 1.15rem + 2.2vw, 2.25rem);
+    line-height: 1.25;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .t-h2 {
+    font-size: clamp(1.375rem, 1.1rem + 1.4vw, 2rem);
+    line-height: 1.25;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .t-h3 {
+    font-size: clamp(1.125rem, 1rem + 0.7vw, 1.5rem);
+    line-height: 1.33;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .t-h4 {
+    font-size: 1.25rem;
+    line-height: 1.4;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+  .t-body {
+    font-size: 1rem;
+    line-height: 1.625;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+  .t-small {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+  }
+  .t-label {
+    font-size: 0.75rem;
+    line-height: 1.4;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ---------------- Layout ---------------- */
+  .page {
+    width: 100%;
+    margin-inline: auto;
+    padding-inline: 1rem;
+    padding-block: 1.5rem 4rem;
+  }
+  @media (min-width: 640px) {
+    .page {
+      padding-inline: 1.5rem;
+      padding-block: 2rem 5rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .page {
+      padding-inline: 2rem;
+    }
+  }
+
+  /* ---------------- Cards ---------------- */
+  .card {
+    background: #ffffff;
+    border: 1px solid var(--color-cb-border);
+    border-radius: var(--r-card);
+  }
+  .card-muted {
+    background: var(--color-cb-surface);
+    border-color: var(--color-cb-border);
+  }
+  /* Brand rule: hover thickens the border to 2px. Drawn as an inset outline so
+     nothing reflows. */
+  .card-interactive {
+    transition:
+      border-color var(--dur) var(--ease),
+      outline-color var(--dur) var(--ease);
+    outline: 1px solid transparent;
+    outline-offset: -1px;
+  }
+  .card-interactive:hover {
+    border-color: var(--color-cb-border-hover);
+    outline-color: var(--color-cb-border-hover);
+  }
+
+  /* ---------------- Buttons ----------------
+     48px is the brand height; 44px is the HIG minimum. `.btn` ships at 44 and
+     `.btn-lg` at 48 for primary page actions. Never scales on hover. */
+  .btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: var(--tap);
+    padding-inline: 1.25rem;
+    border: 1px solid transparent;
+    border-radius: var(--r-control);
+    font-size: 0.9375rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color var(--dur) var(--ease),
+      border-color var(--dur) var(--ease),
+      color var(--dur) var(--ease);
+  }
+  .btn:disabled,
+  .btn[aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+  .btn-lg {
+    height: 48px;
+    padding-inline: 1.5rem;
+    font-size: 1rem;
+  }
+  .btn-sm {
+    height: 36px;
+    padding-inline: 0.875rem;
+    font-size: 0.8125rem;
+    border-radius: var(--r-media);
+  }
+  /* Keep the 44pt target on touch devices without growing the visual chrome. */
+  @media (pointer: coarse) {
+    .btn-sm::after {
+      content: "";
+      position: absolute;
+      inset: -4px;
+    }
+  }
+  .btn-block {
+    width: 100%;
+  }
+
+  .btn-primary {
+    background: var(--color-cb-blue);
+    color: #ffffff;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-cb-blue-hover);
+  }
+  .btn-primary:disabled {
+    background: var(--color-cb-blue-200);
+    color: rgb(255 255 255 / 0.7);
+  }
+
+  .btn-secondary {
+    border-color: var(--color-cb-blue);
+    color: var(--color-cb-blue);
+    background: transparent;
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background: var(--color-cb-blue-subtle);
+  }
+  .btn-secondary:disabled {
+    border-color: var(--color-cb-border-hover);
+    color: var(--color-cb-text-subtle);
+  }
+
+  .btn-neutral {
+    border-color: var(--color-cb-border);
+    color: var(--color-cb-text);
+    background: #ffffff;
+  }
+  .btn-neutral:hover:not(:disabled) {
+    border-color: var(--color-cb-border-hover);
+    background: var(--color-cb-grey-100);
+  }
+  .btn-neutral:disabled {
+    color: var(--color-cb-text-subtle);
+  }
+
+  .btn-tertiary {
+    color: var(--color-cb-blue);
+    background: transparent;
+    padding-inline: 0.75rem;
+  }
+  .btn-tertiary:hover:not(:disabled) {
+    color: var(--color-cb-blue-hover);
+    background: var(--color-cb-blue-subtle);
+  }
+  .btn-tertiary:disabled {
+    color: var(--color-cb-text-subtle);
+  }
+
+  /* Brand micro-interaction: the arrow advances 2px, nothing else moves. */
+  .btn [data-arrow] {
+    transition: transform var(--dur) var(--ease);
+  }
+  .btn:hover:not(:disabled) [data-arrow] {
+    transform: translateX(2px);
+  }
+
+  /* ---------------- Fields ---------------- */
+  .field {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    height: var(--tap);
+    padding-inline: 0.875rem;
+    border: 1px solid var(--color-cb-border);
+    border-radius: var(--r-control);
+    background: #ffffff;
+    color: var(--color-cb-text);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    transition: border-color var(--dur) var(--ease);
+  }
+  .field:hover:not(:disabled) {
+    border-color: var(--color-cb-border-hover);
+  }
+  .field:focus,
+  .field[data-popup-open],
+  .field[aria-expanded="true"] {
+    border-color: var(--color-cb-blue);
+  }
+  .field::placeholder {
+    color: var(--color-cb-text-subtle);
+    font-weight: 400;
+  }
+  /* Native inputs ignore/mishandle flex — keep them block-level. */
+  input.field,
+  select.field,
+  textarea.field {
+    display: block;
+  }
+  select.field {
+    padding-right: 2rem;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2354585b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    appearance: none;
+  }
+
+  /* ---------------- Chips & badges ---------------- */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    min-height: 28px;
+    padding-inline: 0.75rem;
+    border-radius: var(--r-pill);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+  .chip-blue {
+    background: var(--color-cb-blue-subtle);
+    color: var(--color-cb-blue-700);
+  }
+  .chip-neutral {
+    background: var(--color-cb-grey-100);
+    color: var(--color-cb-text-muted);
+    border: 1px solid var(--color-cb-border);
+  }
+  .chip-removable {
+    cursor: pointer;
+    transition:
+      background-color var(--dur) var(--ease),
+      color var(--dur) var(--ease);
+  }
+  .chip-removable:hover {
+    background: var(--color-cb-blue-100);
+  }
+  @media (pointer: coarse) {
+    .chip-removable {
+      min-height: 36px;
+    }
+  }
+
+  /* Count badge riding inside a control */
+  .count {
+    display: inline-flex;
+    min-width: 20px;
+    height: 20px;
+    align-items: center;
+    justify-content: center;
+    padding-inline: 0.375rem;
+    border-radius: var(--r-pill);
+    background: var(--color-cb-blue);
+    color: #ffffff;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0;
+  }
+
+  /* ---------------- Segmented control (HIG picker) ---------------- */
+  .segmented {
+    display: inline-flex;
+    padding: 3px;
+    gap: 3px;
+    border: 1px solid var(--color-cb-border);
+    border-radius: var(--r-control);
+    background: var(--color-cb-grey-100);
+  }
+  .segmented > * > .segment,
+  .segmented > .segment {
+    height: 38px;
+    padding-inline: 1rem;
+    border-radius: calc(var(--r-control) - 4px);
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--color-cb-text-muted);
+    background: transparent;
+    cursor: pointer;
+    transition:
+      background-color var(--dur) var(--ease),
+      color var(--dur) var(--ease);
+  }
+  .segment:hover:not([aria-pressed="true"]) {
+    color: var(--color-cb-text);
+    background: #ffffff;
+  }
+  .segment[aria-pressed="true"] {
+    background: var(--color-cb-blue);
+    color: #ffffff;
+  }
+  @media (pointer: coarse) {
+    .segmented > * > .segment,
+    .segmented > .segment {
+      height: 40px;
+    }
+  }
+
+  /* ---------------- Status / feedback ---------------- */
+  .note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+  .note-error {
+    color: var(--color-cb-danger);
+  }
+  .note-ok {
+    color: var(--color-cb-blue-700);
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 3rem 1.5rem;
+    border: 1px dashed var(--color-cb-border-hover);
+    border-radius: var(--r-card);
+    background: var(--color-cb-surface);
+    text-align: center;
+  }
+
+  .skip-link {
+    position: absolute;
+    left: 1rem;
+    top: -100px;
+    z-index: 100;
+    background: var(--color-cb-blue);
+    color: #ffffff;
+    padding: 0.75rem 1.25rem;
+    border-radius: var(--r-control);
+    font-weight: 700;
+    transition: top var(--dur) var(--ease);
+  }
+  .skip-link:focus {
+    top: 1rem;
+  }
+}
+
+@layer utilities {
+  /* One focus treatment everywhere. Lives in the last layer so it always beats
+     a component's own outline (e.g. `.card-interactive`'s inset hover ring). */
+  :focus-visible {
+    outline: 2px solid var(--color-cb-blue);
+    outline-offset: 2px;
+  }
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* Opt-out for controls that already carry their own focus affordance. cmdk's
+     search field is one: the popup is the focused surface and the active row is
+     highlighted, so a ring boxing the input is redundant noise. */
+  [data-slot="command-input"]:focus,
+  [data-slot="command-input"]:focus-visible {
+    outline: none;
+  }
+
+  /* Entrance for content that arrives after paint. Opacity/translate only —
+     no scale or bounce (brand), and disabled under reduce-motion (base layer). */
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .animate-rise {
+    animation: rise-in 240ms var(--ease) both;
   }
 }

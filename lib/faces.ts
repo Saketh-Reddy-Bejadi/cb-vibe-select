@@ -6,7 +6,14 @@ export type FaceMatch = { external_id: string; similarity: number };
 export type DetectedFace = {
   bbox: { x: number; y: number; width: number; height: number };
   matches: FaceMatch[];
+  /** ArcFace 512-d, L2-normalised. Absent on Space builds predating its return. */
+  embedding?: number[];
 };
+
+/** Guards against a short/garbled vector reaching a `vector(512)` column. */
+export const EMBEDDING_DIM = 512;
+export const isEmbedding = (v: unknown): v is number[] =>
+  Array.isArray(v) && v.length === EMBEDDING_DIM && v.every((n) => typeof n === "number");
 
 const HF_SPACE = process.env.HF_SPACE ?? "sakethbejadi/face-recognition";
 const HF_TOKEN = process.env.HF_TOKEN;
@@ -40,4 +47,77 @@ export async function detectFaces(
   // Output shape is { faces: [...] }; fall back to a bare array just in case.
   const faces = (payload as { faces?: DetectedFace[] })?.faces ?? payload;
   return Array.isArray(faces) ? (faces as DetectedFace[]) : [];
+}
+
+/* -------------------------------------------------------------------------- */
+/* Collection curation                                                        */
+/*                                                                            */
+/* The enrolled collection is the Space's reference set — the only durable     */
+/* place to change what gets recognised. FaceDetection rows are deleted and    */
+/* recreated on every reprocess, so curating those would not survive a scan.   */
+/* -------------------------------------------------------------------------- */
+
+function unwrap<T>(data: unknown): T {
+  return (Array.isArray(data) ? data[0] : data) as T;
+}
+
+export type EnrolledFace = {
+  face_id: string;
+  external_id: string | null;
+  confidence: number | null;
+  bbox?: { x: number; y: number; width: number; height: number };
+  embedding?: number[];
+};
+
+/**
+ * Enrol a reference face under `externalId`.
+ *
+ * The Space enrols EVERY face it finds in the submitted image under the same
+ * id, so callers must pass a single-face crop — handing it a group photo would
+ * label everyone in it. The returned list is one entry per indexed face, so a
+ * length above 1 means the crop caught a bystander and should be rolled back.
+ */
+export async function enrollFace(
+  externalId: string,
+  bytes: Buffer,
+  fileName: string,
+  mimeType = "image/jpeg",
+): Promise<{ indexed: EnrolledFace[]; error?: string }> {
+  const client = await getClient();
+  const file = new File([new Blob([new Uint8Array(bytes)], { type: mimeType })], fileName, {
+    type: mimeType,
+  });
+  const result = await client.predict("/enroll", [HF_COLLECTION, externalId, handle_file(file)]);
+  const payload = unwrap<{ indexed?: EnrolledFace[]; error?: string }>(result.data);
+  if (payload?.error) return { indexed: [], error: payload.error };
+  return { indexed: payload?.indexed ?? [] };
+}
+
+/**
+ * Every reference face in the collection. No image bytes — ids and boxes only,
+ * plus the 512-d vectors when `withEmbeddings` is set.
+ *
+ * Pulling rather than only capturing what we enrol matters: avatars are often
+ * enrolled on the Space's own UI, and those vectors would otherwise be invisible
+ * to us.
+ */
+export async function listEnrolledFaces(withEmbeddings = false): Promise<EnrolledFace[]> {
+  const client = await getClient();
+  const result = await client.predict("/faces", [HF_COLLECTION, withEmbeddings]);
+  const payload = unwrap<EnrolledFace[] | { faces?: EnrolledFace[] }>(result.data);
+  const faces = Array.isArray(payload) ? payload : (payload?.faces ?? []);
+  return Array.isArray(faces) ? faces : [];
+}
+
+/**
+ * Remove one reference face. A person may have several references enrolled, and
+ * recognition only stops once they are all gone — the caller decides how many
+ * to delete.
+ */
+export async function deleteEnrolledFace(faceId: string): Promise<{ ok: boolean; error?: string }> {
+  const client = await getClient();
+  const result = await client.predict("/delete_face", [HF_COLLECTION, faceId]);
+  const payload = unwrap<{ deleted?: string; error?: string }>(result.data);
+  if (payload?.error) return { ok: false, error: payload.error };
+  return { ok: !!payload?.deleted };
 }

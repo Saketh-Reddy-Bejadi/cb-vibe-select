@@ -92,7 +92,8 @@ model Image {
   error        String?
   processedAt  DateTime?
   createdAt    DateTime        @default(now())
-  faces        FaceDetection[]
+  faces         FaceDetection[]
+  archivedFaces ArchivedFace[]
 
   @@index([status])
 }
@@ -105,11 +106,48 @@ model Person {
   email      String?
   avatarUrl  String?
   isSeeded   Boolean         @default(true)
+  // Suppressed from search and from face labels. Durable curation lives here:
+  // FaceDetection rows are deleted and recreated on every reprocess, so a
+  // per-detection flag would not survive a re-scan. See lib/worker.ts.
+  hidden     Boolean         @default(false)
   faces      FaceDetection[]
 }
 
 // One detected face box. personId null = unknown (empty matches from the backend). confidence = matches[0].similarity.
 // Global key/value config (e.g. permissionMode = OPEN | STRICT).
+/// A face region an admin has dismissed: a stranger in the background, or a bad
+/// detection. Kept in its own table on purpose — FaceDetection rows are deleted
+/// and recreated on every reprocess (see lib/worker.ts), so a flag there would
+/// not survive a re-match. Matched back to detections by box overlap, and
+/// reversible, which is the whole point of archiving rather than deleting.
+model ArchivedFace {
+  id        String   @id @default(cuid())
+  image     Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  imageId   String
+  boxX      Int
+  boxY      Int
+  boxWidth  Int
+  boxHeight Int
+  createdAt DateTime @default(now())
+
+  @@index([imageId])
+}
+
+/// A local mirror of the recognition Space's enrolled collection, pulled from
+/// /faces. Avatars are often enrolled on the Space directly, so PicScope has to
+/// be able to fetch the references rather than only capture what it enrolled
+/// itself. `id` is the Space's own face_id, which makes syncing an upsert and
+/// makes references deleted upstream detectable.
+model ReferenceFace {
+  id         String                    @id
+  externalId String
+  confidence Float?
+  embedding  Unsupported("vector(512)")
+  syncedAt   DateTime                  @default(now())
+
+  @@index([externalId])
+}
+
 model SystemSetting {
   key   String @id
   value String
@@ -127,4 +165,9 @@ model FaceDetection {
   boxHeight  Int
   confidence Float?
   createdAt  DateTime @default(now())
+  /// ArcFace 512-d, L2-normalised — the same vector the Space computes and used
+  /// to discard. Persisting it means re-matching against a changed collection
+  /// is a SQL query, instead of re-downloading and re-detecting every image.
+  /// Prisma has no vector type, so this is read and written via raw SQL only.
+  embedding  Unsupported("vector(512)")?
 }

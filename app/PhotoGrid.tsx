@@ -2,6 +2,7 @@ import type { Prisma, Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { visibleImageWhere } from "@/lib/permissions";
 import { localEnd, localStart } from "@/lib/dates";
+import { isArchived } from "@/lib/boxes";
 import Gallery, { type GalleryImage } from "./Gallery";
 
 export type Filters = {
@@ -51,7 +52,10 @@ export default async function PhotoGrid({
     orderBy: [{ capturedAt: "desc" }, { createdAt: "desc" }],
     include: {
       folder: { select: { name: true } },
-      faces: { include: { person: { select: { name: true } } } },
+      faces: { include: { person: { select: { name: true, hidden: true } } } },
+      // Regions an admin dismissed. Matched by overlap rather than by id,
+      // because detections are recreated from scratch on every reprocess.
+      archivedFaces: { select: { boxX: true, boxY: true, boxWidth: true, boxHeight: true } },
     },
     take: 200,
   });
@@ -66,12 +70,15 @@ export default async function PhotoGrid({
     latitude: r.latitude,
     longitude: r.longitude,
     folderName: r.folder.name,
-    faces: r.faces.map((f) => ({
+    faces: r.faces
+      .filter((f) => !isArchived(f, r.archivedFaces))
+      .map((f) => ({
       boxX: f.boxX,
       boxY: f.boxY,
       boxWidth: f.boxWidth,
       boxHeight: f.boxHeight,
-      name: f.person?.name ?? null,
+      // A hidden person still has their face detected; it just goes unlabelled.
+      name: f.person && !f.person.hidden ? f.person.name : null,
       confidence: f.confidence,
     })),
   }));

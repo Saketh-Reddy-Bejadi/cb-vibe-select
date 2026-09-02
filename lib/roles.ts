@@ -9,9 +9,19 @@ export function assignableRoles(viewer: Role): Role[] {
   return ALL_ROLES.filter((r) => RANK[r] <= RANK[viewer]);
 }
 
-// A manager may see users at their rank or below (admins never see owners).
-export function visibleRoles(viewer: Role): Role[] {
-  return assignableRoles(viewer);
+// Everyone is listed; ranks above the viewer are masked by `displayRole` below.
+// Hiding higher-ranked accounts entirely made them look like missing users, so
+// they are shown but never revealed as such.
+export function visibleRoles(): Role[] {
+  return ALL_ROLES;
+}
+
+// The role a viewer is permitted to *see* on a target. Anything above the
+// viewer's own rank is capped to that rank — an ADMIN sees an OWNER as "Admin"
+// and never learns a higher tier exists. Display only; `canEdit` still refuses
+// the write, so masking grants no privilege.
+export function displayRole(viewer: Role, target: Role): Role {
+  return RANK[target] > RANK[viewer] ? viewer : target;
 }
 
 // A manager may change the role of users strictly below them only.

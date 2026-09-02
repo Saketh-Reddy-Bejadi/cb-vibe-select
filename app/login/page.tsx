@@ -1,20 +1,25 @@
 import { redirect } from "next/navigation";
+import { ArrowRight } from "lucide-react";
 import { auth, signIn } from "@/auth";
+import { Logo } from "@/components/logo";
 
 export default async function LoginPage() {
   const session = await auth();
   if (session?.user) redirect("/");
 
   return (
-    <main className="flex flex-1 items-center justify-center px-6 py-16">
-      <div className="w-full max-w-md rounded-lg border border-cb-border p-8">
-        <p className="text-xs font-medium uppercase tracking-[0.04em] text-cb-blue">
-          Enabling Careers
-        </p>
-        <h1 className="mt-2 text-4xl font-bold leading-tight text-cb-text">PicScope</h1>
-        <p className="mt-3 text-base font-medium leading-relaxed text-cb-text">
+    <main
+      id="main"
+      className="flex flex-1 items-center justify-center px-4 py-12 sm:px-6 sm:py-20"
+    >
+      <div className="card animate-rise w-full max-w-md p-6 sm:p-8">
+        <Logo size={32} />
+
+        <h1 className="t-display mt-6 text-cb-text">Enabling Careers</h1>
+        <p className="t-body mt-3 text-cb-text-muted">
           Enterprise visual intelligence for your Microsoft 365 photo libraries.
         </p>
+
         <form
           action={async () => {
             "use server";
@@ -22,10 +27,15 @@ export default async function LoginPage() {
           }}
           className="mt-8"
         >
-          <button className="flex h-12 w-full items-center justify-center rounded-2xl bg-cb-blue px-6 text-base font-bold text-white transition-colors duration-150 ease-out hover:bg-cb-blue-hover">
+          <button type="submit" className="btn btn-lg btn-primary btn-block">
             Sign in with Microsoft
+            <ArrowRight data-arrow className="h-4 w-4" aria-hidden />
           </button>
         </form>
+
+        <p className="t-small mt-4 text-cb-text-muted">
+          Use your <b>codebasics.io</b> work account.
+        </p>
       </div>
     </main>
   );

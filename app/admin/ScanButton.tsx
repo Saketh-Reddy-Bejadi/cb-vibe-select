@@ -1,7 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useId } from "react";
 import { scanFolder, type ScanState } from "./actions";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/spinner";
 
 const initial: ScanState = {};
@@ -9,25 +11,33 @@ const initial: ScanState = {};
 export default function ScanButton({ folderId, synced }: { folderId: string; synced?: boolean }) {
   const [state, formAction, pending] = useActionState(scanFolder, initial);
   const label = synced ? "Rescan" : "Scan";
+  const id = useId();
 
   return (
-    <form action={formAction} className="flex flex-col items-end gap-1">
+    <form action={formAction} className="flex flex-col items-start gap-1.5 sm:items-end">
       <input type="hidden" name="folderId" value={folderId} />
       <div className="flex items-center gap-3">
-        <label className="flex items-center gap-1.5 text-sm font-medium text-cb-text">
-          <input name="recursive" type="checkbox" defaultChecked className="h-4 w-4 accent-cb-blue" />
-          Subfolders
-        </label>
-        <button
-          disabled={pending}
-          className="flex h-10 items-center gap-2 rounded-2xl border border-cb-blue px-4 text-sm font-bold text-cb-blue transition-colors duration-150 ease-out hover:bg-cb-blue-subtle disabled:border-cb-border disabled:text-cb-text-muted"
+        <Label
+          htmlFor={id}
+          className="t-small flex cursor-pointer items-center gap-2 font-medium leading-normal text-cb-text"
         >
-          {pending && <Spinner />}
+          {/* value="on" matches the native default the server action tests for. */}
+          <Checkbox id={id} name="recursive" value="on" defaultChecked className="size-[18px]" />
+          Subfolders
+        </Label>
+        <button disabled={pending} className="btn btn-sm btn-secondary">
+          {pending && <Spinner className="h-3.5 w-3.5" />}
           {pending ? "Scanning…" : label}
         </button>
       </div>
-      {state.error && <p className="text-xs font-medium text-red-600">{state.error}</p>}
-      {state.ok && <p className="text-xs font-medium text-cb-blue">{state.ok}</p>}
+      <div aria-live="polite" className="empty:hidden text-right">
+        {state.error && (
+          <p role="alert" className="note note-error">
+            {state.error}
+          </p>
+        )}
+        {state.ok && <p className="note note-ok">{state.ok}</p>}
+      </div>
     </form>
   );
 }

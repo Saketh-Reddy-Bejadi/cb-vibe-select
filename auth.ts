@@ -27,6 +27,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         });
         token.uid = dbUser.id;
         token.role = dbUser.role;
+      } else if (token.uid) {
+        // Refresh role from DB each request so role changes (promote/demote) take effect
+        // without requiring the user to sign out and back in.
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.uid as string },
+          select: { role: true },
+        });
+        if (dbUser) token.role = dbUser.role;
       }
       return token;
     },

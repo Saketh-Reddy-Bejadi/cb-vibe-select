@@ -57,6 +57,7 @@ export default function Gallery({ images }: { images: GalleryImage[] }) {
 
 function Thumb({ img, onOpen }: { img: GalleryImage; onOpen: () => void }) {
   const [loaded, setLoaded] = useState(false);
+  const [errored, setErrored] = useState(false);
   // Reserve the tile's height from known dimensions so the column doesn't jump when the image loads.
   const ratio = img.width && img.height ? img.width / img.height : undefined;
 
@@ -67,21 +68,28 @@ function Thumb({ img, onOpen }: { img: GalleryImage; onOpen: () => void }) {
     >
       <div
         className="relative w-full bg-cb-surface"
-        style={ratio ? { aspectRatio: String(ratio) } : undefined}
+        style={ratio ? { aspectRatio: String(ratio) } : { aspectRatio: "1" }}
       >
-        {!loaded && (
+        {!loaded && !errored && (
           <span className="absolute inset-0 flex items-center justify-center text-cb-text-muted">
             <Spinner className="h-5 w-5" />
           </span>
         )}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={`/api/images/${img.id}/thumb?size=medium`}
-          alt={img.fileName}
-          loading="lazy"
-          onLoad={() => setLoaded(true)}
-          className={`w-full transition-opacity duration-200 ${loaded ? "opacity-100" : "opacity-0"}`}
-        />
+        {errored ? (
+          <span className="absolute inset-0 flex items-center justify-center px-2 text-center text-xs font-medium text-cb-text-muted">
+            Preview unavailable
+          </span>
+        ) : (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={`/api/images/${img.id}/thumb?size=medium`}
+            alt={img.fileName}
+            loading="lazy"
+            onLoad={() => setLoaded(true)}
+            onError={() => setErrored(true)}
+            className={`w-full transition-opacity duration-200 ${loaded ? "opacity-100" : "opacity-0"}`}
+          />
+        )}
       </div>
       {img.faces.length > 0 && (
         <span className="block px-2 py-1.5 text-left text-xs font-medium text-cb-text-muted">
@@ -95,6 +103,7 @@ function Thumb({ img, onOpen }: { img: GalleryImage; onOpen: () => void }) {
 
 function Inspector({ image }: { image: GalleryImage }) {
   const [loaded, setLoaded] = useState(false);
+  const [errored, setErrored] = useState(false);
   const canOverlay = !!image.width && !!image.height;
   const names = image.faces.map((f) => f.name).filter(Boolean) as string[];
 
@@ -105,9 +114,14 @@ function Inspector({ image }: { image: GalleryImage }) {
       </DialogTitle>
 
       <div className="relative mt-3 flex min-h-[200px] items-center justify-center overflow-hidden rounded-lg border border-cb-border bg-cb-surface">
-        {!loaded && (
+        {!loaded && !errored && (
           <span className="absolute inset-0 flex items-center justify-center text-cb-blue">
             <Spinner className="h-7 w-7" />
+          </span>
+        )}
+        {errored && (
+          <span className="px-4 py-10 text-sm font-medium text-cb-text-muted">
+            Preview unavailable — try “Open in SharePoint”.
           </span>
         )}
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -115,6 +129,7 @@ function Inspector({ image }: { image: GalleryImage }) {
           src={`/api/images/${image.id}/thumb?size=large`}
           alt={image.fileName}
           onLoad={() => setLoaded(true)}
+          onError={() => setErrored(true)}
           className={`mx-auto block max-h-[60vh] w-auto transition-opacity duration-200 ${loaded ? "opacity-100" : "opacity-0"}`}
         />
         {canOverlay &&

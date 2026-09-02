@@ -6,8 +6,9 @@ import { Spinner } from "@/components/spinner";
 
 const initial: ScanState = {};
 
-export default function ScanButton({ folderId }: { folderId: string }) {
+export default function ScanButton({ folderId, synced }: { folderId: string; synced?: boolean }) {
   const [state, formAction, pending] = useActionState(scanFolder, initial);
+  const label = synced ? "Rescan" : "Scan";
 
   return (
     <form action={formAction} className="flex flex-col items-end gap-1">
@@ -22,7 +23,7 @@ export default function ScanButton({ folderId }: { folderId: string }) {
           className="flex h-10 items-center gap-2 rounded-2xl border border-cb-blue px-4 text-sm font-bold text-cb-blue transition-colors duration-150 ease-out hover:bg-cb-blue-subtle disabled:border-cb-border disabled:text-cb-text-muted"
         >
           {pending && <Spinner />}
-          {pending ? "Scanning…" : "Scan"}
+          {pending ? "Scanning…" : label}
         </button>
       </div>
       {state.error && <p className="text-xs font-medium text-red-600">{state.error}</p>}

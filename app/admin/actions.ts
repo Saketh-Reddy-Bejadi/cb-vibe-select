@@ -4,7 +4,29 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { resolveFolder, listImages } from "@/lib/graph";
 import { setPermissionMode } from "@/lib/settings";
+import { assignableRoles, canEdit } from "@/lib/roles";
+import type { Role } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+
+// Change a user's role, enforcing the hierarchy server-side (OWNER>ADMIN>USER):
+// you may only edit users strictly below you and assign roles at your rank or below.
+export async function setUserRole(formData: FormData) {
+  const me = await requireAdmin();
+  if (!me) return;
+
+  const userId = String(formData.get("userId") ?? "");
+  const newRole = String(formData.get("role") ?? "") as Role;
+  if (userId === me.id) return; // no self-change (prevents self-lockout)
+
+  const target = await prisma.user.findUnique({ where: { id: userId } });
+  if (!target) return;
+  if (target.email.toLowerCase() === process.env.OWNER_EMAIL?.toLowerCase()) return; // protect bootstrap owner
+  if (!canEdit(me.role, target.role)) return; // can't touch peers or higher
+  if (!assignableRoles(me.role).includes(newRole)) return; // can't grant above yourself
+
+  await prisma.user.update({ where: { id: userId }, data: { role: newRole } });
+  revalidatePath("/admin/users");
+}
 
 // Owner-only: flip the global Strict/Open permission mode.
 export async function updatePermissionMode(formData: FormData) {

@@ -571,6 +571,43 @@
     text-align: center;
   }
 
+  /* Indeterminate progress for a navigation already in flight — we can't know
+     how long the server will take, only that something is happening. */
+  .loading-bar {
+    position: relative;
+    height: 2px;
+    overflow: hidden;
+    border-radius: var(--r-pill);
+    background: var(--color-cb-blue-subtle);
+  }
+  .loading-bar::after {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 35%;
+    border-radius: inherit;
+    background: var(--color-cb-blue);
+    animation: bar-slide 1.1s ease-in-out infinite;
+  }
+  @keyframes bar-slide {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(300%);
+    }
+  }
+  /* The global reduce-motion rule collapses durations to ~0, which would turn an
+     infinite loop into a strobe. Show a steady bar instead. */
+  @media (prefers-reduced-motion: reduce) {
+    .loading-bar::after {
+      animation: none;
+      width: 100%;
+      opacity: 0.5;
+    }
+  }
+
   .skip-link {
     position: absolute;
     left: 1rem;

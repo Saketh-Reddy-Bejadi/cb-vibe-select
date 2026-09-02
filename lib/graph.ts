@@ -65,16 +65,29 @@ export async function fetchImageBytes(driveId: string, itemId: string): Promise<
 
 // Fetch a Graph-generated thumbnail (CDN-cached, small). size: "small" | "medium" | "large".
 // Bytes are proxied to the browser, never stored. Returns null if no thumbnail exists.
+/**
+ * `size` is either a named Graph rendition (small=96px, medium=176px,
+ * large=800px on the longest edge) or a custom bounding box like "1200x1200",
+ * which scales to fit without cropping.
+ *
+ * The named sizes are far too small for a retina gallery tile, so callers ask
+ * for a custom box. Custom renditions aren't available on every drive, so a
+ * failed custom request falls back to `large` rather than failing outright.
+ */
 export async function fetchThumbnail(
   driveId: string,
   itemId: string,
-  size: "small" | "medium" | "large" = "large",
+  size: string = "large",
 ): Promise<{ body: ArrayBuffer; contentType: string } | null> {
   const token = await getAppToken();
-  const res = await fetch(
-    `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}/thumbnails/0/${size}/content`,
-    { headers: { Authorization: `Bearer ${token}` } },
-  );
+  const get = (s: string) =>
+    fetch(
+      `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${itemId}/thumbnails/0/${s}/content`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+
+  let res = await get(size);
+  if (!res.ok && /^\d+x\d+$/.test(size)) res = await get("large");
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`Graph thumbnail ${itemId} failed (${res.status})`);
   return {

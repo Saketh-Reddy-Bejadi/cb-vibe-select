@@ -13,12 +13,25 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const image = await prisma.image.findFirst({ where: { ...where, id }, include: { folder: true } });
   if (!image) return new Response("Not found", { status: 404 });
 
-  const raw = new URL(req.url).searchParams.get("size");
-  const size = raw === "small" || raw === "medium" ? raw : "large";
+  // Allowlisted widths only — `w` reaches Graph, so it can't be open-ended.
+  // These are the widths the gallery's srcSet offers, plus the lightbox sizes.
+  const ALLOWED = [200, 400, 800, 1200, 1600, 2400];
+  const sp = new URL(req.url).searchParams;
+  const requested = Number(sp.get("w"));
+  const width = ALLOWED.includes(requested) ? requested : 800;
+  // Square bounding box: Graph scales to fit inside it, so the aspect ratio is
+  // preserved and `width` caps the longest edge.
+  const size = `${width}x${width}`;
+
   const thumb = await fetchThumbnail(image.folder.graphDriveId, image.graphItemId, size);
   if (!thumb) return new Response("No thumbnail", { status: 404 });
 
   return new Response(thumb.body, {
-    headers: { "Content-Type": thumb.contentType, "Cache-Control": "private, max-age=3600" },
+    headers: {
+      "Content-Type": thumb.contentType,
+      // Renditions are stable for a given item; a day of private caching keeps
+      // scrolling back through the gallery off the Graph API entirely.
+      "Cache-Control": "private, max-age=86400",
+    },
   });
 }

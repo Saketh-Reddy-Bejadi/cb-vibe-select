@@ -182,3 +182,30 @@ export async function scanFolder(_prev: ScanState, formData: FormData): Promise<
     return { error: message };
   }
 }
+
+// Re-scan only adds new files (createMany + skipDuplicates), so images already
+// indexed are never reprocessed by it. This is the per-folder counterpart to the
+// global re-index: it puts a folder's finished images back on the queue, which
+// is what you want after enrolling faces that appear in one shoot.
+export async function requeueFolder(_prev: ScanState, formData: FormData): Promise<ScanState> {
+  const user = await requireAdmin();
+  if (!user) return { error: "Not authorized." };
+
+  const folderId = String(formData.get("folderId") ?? "");
+  const folder = await prisma.folder.findUnique({
+    where: { id: folderId },
+    select: { name: true },
+  });
+  if (!folder) return { error: "Folder not found." };
+
+  const { count } = await prisma.image.updateMany({
+    where: { folderId, status: "DONE" },
+    data: { status: "PENDING", error: null },
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/people");
+  return count === 0
+    ? { ok: "Nothing to re-index in this folder." }
+    : { ok: `${count} image(s) queued. Run "Process queue" above to start.` };
+}

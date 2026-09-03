@@ -33,7 +33,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<SP>
   const base = await visibleImageWhere({ id: userId, role });
   const [persons, folders] = await Promise.all([
     prisma.person.findMany({
-      where: { faces: { some: { image: base } } },
+      // Hidden people are curated out of search entirely — see admin/people.
+      where: { hidden: false, faces: { some: { image: base } } },
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),

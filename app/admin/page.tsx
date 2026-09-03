@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ExternalLink, FolderPlus, Users } from "lucide-react";
+import { ExternalLink, FolderPlus, ScanFace, Users } from "lucide-react";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getPermissionMode } from "@/lib/settings";
@@ -9,6 +9,7 @@ import FolderForm from "./FolderForm";
 import ScanButton from "./ScanButton";
 import ProcessButton from "./ProcessButton";
 import RetryButton from "./RetryButton";
+import RequeueButton from "./RequeueButton";
 
 const WIDTH = "max-w-3xl";
 
@@ -21,6 +22,7 @@ export default async function AdminPage() {
     orderBy: { createdAt: "desc" },
     include: {
       _count: { select: { images: true } },
+      images: { where: { status: "DONE" }, select: { id: true } },
       jobs: { orderBy: { createdAt: "desc" }, take: 1 },
     },
   });
@@ -39,10 +41,16 @@ export default async function AdminPage() {
           <p className="t-small mt-1 text-cb-text-muted">
             {session?.user?.email} · {session?.user?.role}
           </p>
-          <Link href="/admin/users" className="btn btn-neutral mt-4">
-            <Users className="h-4 w-4" aria-hidden />
-            Users &amp; roles
-          </Link>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link href="/admin/users" className="btn btn-neutral">
+              <Users className="h-4 w-4" aria-hidden />
+              Users &amp; roles
+            </Link>
+            <Link href="/admin/people" className="btn btn-neutral">
+              <ScanFace className="h-4 w-4" aria-hidden />
+              People &amp; faces
+            </Link>
+          </div>
         </header>
 
         <div className="flex flex-col gap-4 sm:gap-5">
@@ -162,6 +170,7 @@ export default async function AdminPage() {
                         </button>
                       </form>
                       <ScanButton folderId={f.id} synced={!!f.lastSyncedAt} />
+                    <RequeueButton folderId={f.id} count={f.images.length} />
                     </div>
                   </div>
                 </li>

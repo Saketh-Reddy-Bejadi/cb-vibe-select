@@ -2,6 +2,7 @@ import { prisma } from "./prisma";
 import { fetchImageBytes } from "./graph";
 import { parseExif } from "./exif";
 import { detectFaces } from "./faces";
+import { replaceFacesSql } from "./vectors";
 
 // Claim one PENDING image atomically so concurrent workers never grab the same row.
 async function claimNext(): Promise<{ id: string; fileName: string } | null> {
@@ -68,10 +69,11 @@ async function processImage(imageId: string): Promise<boolean> {
     }
 
     await prisma.$transaction([
-      // Idempotent: clear prior faces so re-processing never duplicates.
-      prisma.faceDetection.deleteMany({ where: { imageId: image.id } }),
-      prisma.faceDetection.createMany({
-        data: faces.map((f) => {
+      // Raw rather than createMany: `embedding` is an Unsupported column, so the
+      // Prisma client cannot write it. Same delete-then-insert, same transaction.
+      ...replaceFacesSql(
+        image.id,
+        faces.map((f) => {
           const top = f.matches[0];
           return {
             imageId: image.id,
@@ -81,9 +83,13 @@ async function processImage(imageId: string): Promise<boolean> {
             boxWidth: Math.round(f.bbox.width),
             boxHeight: Math.round(f.bbox.height),
             confidence: top ? top.similarity : null,
+            // Stored so this face can be re-matched later without another pass.
+            // Absent on Space builds that don't return it yet — harmless, that
+            // face simply needs a re-index to become locally matchable.
+            embedding: f.embedding,
           };
-        }),
-      }),
+        })
+      ),
       prisma.image.update({
         where: { id: image.id },
         data: {
